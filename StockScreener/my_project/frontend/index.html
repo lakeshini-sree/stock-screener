@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Alert System</title>
+</head>
+<body>
+
+<!-- ✅ DISCLAIMER -->
+<div style="background-color:#fff3cd; padding:10px; border-radius:5px; margin-bottom:10px;">
+  ⚠️ Disclaimer: This data is for educational purposes only and not financial advice.
+</div>
+
+<h2>Stock Query</h2>
+
+<input type="text" id="queryInput" placeholder="Enter query">
+<button onclick="runQuery()">Search</button>
+
+<p id="message" style="color:red;"></p>
+<div id="results"></div>
+
+<hr>
+
+<h2>Create Alert</h2>
+
+<input type="text" id="symbol" placeholder="Stock (e.g. TCS)">
+<input type="text" id="condition" placeholder="above/below">
+<input type="number" id="value" placeholder="Target Price">
+
+<button onclick="createAlert()">Create Alert</button>
+
+<p id="alertMessage" style="color:green;"></p>
+
+<hr>
+
+<h2>Triggered Alerts</h2>
+<button onclick="checkAlerts()">Check Alerts</button>
+
+<div id="alerts"></div>
+
+<script src="results.js"></script>
+
+</body>
+</html>
