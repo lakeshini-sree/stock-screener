@@ -2,111 +2,74 @@ import sqlite3
 import os
 import yfinance as yf
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB = os.path.join(BASE_DIR, "stocks.db")
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "db", "stocks.db")
 
 # -----------------------------
 # CREATE ALERT
 # -----------------------------
-def create_alert(alert):
-    conn = sqlite3.connect(DB)
+def create_alert(data):
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO alerts (user_id, alert_type, stock_symbol, condition, value, status)
-        VALUES (?, ?, ?, ?, ?, 'active')
+    INSERT INTO alerts (user_id, alert_type, stock_symbol, condition, value)
+    VALUES (?, ?, ?, ?, ?)
     """, (
-        alert["user_id"],
-        alert["alert_type"],
-        alert["stock_symbol"],
-        alert["condition"],
-        alert["value"]
+        data["user_id"],
+        data["alert_type"],
+        data["stock_symbol"],
+        data["condition"],
+        data["value"]
     ))
 
     conn.commit()
     conn.close()
 
-
 # -----------------------------
 # GET ALERTS
 # -----------------------------
 def get_alerts():
-    conn = sqlite3.connect(DB)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
     cur.execute("SELECT * FROM alerts")
-    alerts = cur.fetchall()
+    rows = cur.fetchall()
 
     conn.close()
-    return alerts
 
+    return [dict(row) for row in rows]
 
 # -----------------------------
 # DELETE ALERT
 # -----------------------------
 def delete_alert(alert_id):
-    conn = sqlite3.connect(DB)
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     cur.execute("DELETE FROM alerts WHERE id=?", (alert_id,))
     conn.commit()
     conn.close()
 
-
 # -----------------------------
-# 🔥 GET LIVE STOCK PRICE
-# -----------------------------
-def get_stock_price(symbol):
-    try:
-        stock = yf.Ticker(symbol + ".NS")
-        data = stock.history(period="1d")
-
-        if data.empty:
-            return None
-
-        return float(data["Close"].iloc[-1])
-    except:
-        return None
-
-
-# -----------------------------
-# 🔥 ALERT EVALUATION LOGIC
+# CHECK ALERTS
 # -----------------------------
 def evaluate_alerts():
-    conn = sqlite3.connect(DB)
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT id, stock_symbol, condition, value 
-        FROM alerts 
-        WHERE status='active'
-    """)
-
-    alerts = cur.fetchall()
+    alerts = get_alerts()
     triggered = []
 
     for alert in alerts:
-        alert_id, symbol, condition, value = alert
+        try:
+            stock = yf.Ticker(alert["stock_symbol"])
+            price = stock.history(period="1d")["Close"].iloc[-1]
 
-        current_price = get_stock_price(symbol)
+            if alert["condition"] == ">" and price > alert["value"]:
+                triggered.append(f"{alert['stock_symbol']} above {alert['value']}")
+            elif alert["condition"] == "<" and price < alert["value"]:
+                triggered.append(f"{alert['stock_symbol']} below {alert['value']}")
 
-        if current_price is None:
+        except:
             continue
 
-        if condition == "above" and current_price > value:
-            triggered.append({
-                "id": alert_id,
-                "stock": symbol,
-                "price": current_price
-            })
-
-        elif condition == "below" and current_price < value:
-            triggered.append({
-                "id": alert_id,
-                "stock": symbol,
-                "price": current_price
-            })
-
-    conn.close()
     return triggered
