@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-import random
+import requests
+import os
 
 st.set_page_config(layout="wide")
 
@@ -18,9 +19,6 @@ h1 {
     font-size: 40px !important;
     font-weight: 700;
 }
-h2, h3 {
-    font-size: 24px !important;
-}
 
 [data-testid="stMetric"] {
     background-color: #111827;
@@ -28,25 +26,16 @@ h2, h3 {
     border-radius: 12px;
 }
 
-[data-testid="stMetricValue"] {
-    font-size: 28px !important;
-}
-
 .stButton>button {
     font-size: 18px !important;
     padding: 10px 20px !important;
     border-radius: 10px;
 }
-
-.stDataFrame {
-    font-size: 16px !important;
-}
-
-section[data-testid="stSidebar"] * {
-    font-size: 18px !important;
-}
 </style>
 """, unsafe_allow_html=True)
+
+# ---------------- BACKEND URL ----------------
+BASE_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 # ---------------- SIDEBAR ----------------
 st.sidebar.title("📊 StockAI Dashboard")
@@ -61,10 +50,8 @@ page = st.sidebar.radio("Navigation", [
 if "results" not in st.session_state:
     st.session_state["results"] = None
 
-import requests
-
 # ==============================
-# 🔍 SCREENER (CONNECTED TO BACKEND)
+# 🔍 SCREENER
 # ==============================
 if page == "🔍 Screener":
 
@@ -76,22 +63,25 @@ if page == "🔍 Screener":
 
         try:
             response = requests.post(
-    "https://your-backend.onrender.com/query",
-    json={"query": query}
-)
-            result = response.json()
+                f"{BASE_URL}/query",
+                json={"query": query}
+            )
 
-            if result["status"] == "success":
-                data = result["data"]["results"]
-
-                if len(data) == 0:
-                    st.warning("No data found")
-                else:
-                    df = pd.DataFrame(data)
-                    st.session_state["results"] = df
-
+            if response.status_code != 200:
+                st.error(f"Backend error ❌\n{response.text}")
             else:
-                st.error(result["message"])
+                result = response.json()
+
+                if result["status"] == "success":
+                    data = result["data"]["results"]
+
+                    if len(data) == 0:
+                        st.warning("No data found")
+                    else:
+                        df = pd.DataFrame(data)
+                        st.session_state["results"] = df
+                else:
+                    st.error(result["message"])
 
         except Exception as e:
             st.error(f"Backend not running ❌\n{e}")
@@ -122,13 +112,10 @@ if page == "🔍 Screener":
             col1, col2 = st.columns(2)
 
             with col1:
-                st.subheader("Price Comparison")
                 st.bar_chart(df.set_index("company")["price"])
 
             with col2:
-                st.subheader("Profit Comparison")
                 st.bar_chart(df.set_index("company")["profit"])
-
 
 # ==============================
 # 💼 PORTFOLIO
@@ -147,8 +134,6 @@ elif page == "💼 Portfolio":
 
         profit = current_price - buy_price
 
-        st.markdown("### 📊 Result")
-
         if profit > 0:
             st.success(f"Profit: ₹{profit}")
         elif profit < 0:
@@ -163,18 +148,4 @@ elif page == "🚨 Alerts":
 
     st.markdown("<h1>🚨 Smart Alerts</h1>", unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
-
-    user_id = col1.text_input("User ID", "user1")
-    stock = col2.text_input("Stock Symbol")
-
-    col3, col4 = st.columns(2)
-
-    condition = col3.selectbox("Condition", ["above", "below"])
-    price = col4.number_input("Target Price")
-
-    if st.button("Set Alert"):
-        st.success("✅ Alert saved (demo mode)")
-
-    if st.button("Check Alerts"):
-        st.info("No alerts triggered (demo mode)")
+    st.info("Coming soon 🚀")
