@@ -76,10 +76,9 @@ if page == "🔍 Screener":
 
         try:
             response = requests.post(
-                "http://127.0.0.1:8000/query",
-                json={"query": query}
-            )
-
+    "https://your-backend.onrender.com/query",
+    json={"query": query}
+)
             result = response.json()
 
             if result["status"] == "success":
