@@ -61,25 +61,41 @@ page = st.sidebar.radio("Navigation", [
 if "results" not in st.session_state:
     st.session_state["results"] = None
 
+import requests
+
 # ==============================
-# 🔍 SCREENER (NO BACKEND)
+# 🔍 SCREENER (CONNECTED TO BACKEND)
 # ==============================
 if page == "🔍 Screener":
 
     st.markdown("<h1>📈 Smart Stock Screener</h1>", unsafe_allow_html=True)
 
-    query = st.text_input("Enter your query")
+    query = st.text_input("Enter your query (ex: revenue > 100000, Q1)")
 
     if st.button("Search"):
 
-        data = [
-            {"company": "TCS", "price": random.randint(3000, 4000), "revenue": 1000, "profit": random.randint(100, 300)},
-            {"company": "INFY", "price": random.randint(1400, 1800), "revenue": 900, "profit": random.randint(80, 250)},
-            {"company": "RELIANCE", "price": random.randint(2500, 3000), "revenue": 1500, "profit": random.randint(150, 400)},
-            {"company": "HDFC", "price": random.randint(1500, 2000), "revenue": 1100, "profit": random.randint(120, 350)},
-        ]
+        try:
+            response = requests.post(
+                "http://127.0.0.1:8000/query",
+                json={"query": query}
+            )
 
-        st.session_state["results"] = pd.DataFrame(data)
+            result = response.json()
+
+            if result["status"] == "success":
+                data = result["data"]["results"]
+
+                if len(data) == 0:
+                    st.warning("No data found")
+                else:
+                    df = pd.DataFrame(data)
+                    st.session_state["results"] = df
+
+            else:
+                st.error(result["message"])
+
+        except Exception as e:
+            st.error(f"Backend not running ❌\n{e}")
 
     if st.session_state["results"] is not None:
 
@@ -113,6 +129,7 @@ if page == "🔍 Screener":
             with col2:
                 st.subheader("Profit Comparison")
                 st.bar_chart(df.set_index("company")["profit"])
+
 
 # ==============================
 # 💼 PORTFOLIO
