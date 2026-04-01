@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+
 # -----------------------------
 # FIX IMPORT PATH
 # -----------------------------
@@ -17,10 +18,13 @@ sys.path.append(ROOT_DIR)
 # -----------------------------
 # IMPORTS
 # -----------------------------
-from services.llm_service import nl_to_dsl
-from services.validator import validate_dsl
-from services.alerts_service import (
-    create_alert, get_alerts, delete_alert, evaluate_alerts
+from StockScreener.my_project.backend.services.llm_service import nl_to_dsl
+from StockScreener.my_project.backend.services.validator import validate_dsl
+from StockScreener.my_project.backend.services.alerts_service import (
+    create_alert,
+    get_alerts,
+    delete_alert,
+    evaluate_alerts
 )
 from compiler.query_builder import SQLCompiler
 
