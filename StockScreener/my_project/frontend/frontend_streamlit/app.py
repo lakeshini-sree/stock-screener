@@ -1,25 +1,19 @@
 import streamlit as st
-import requests
 import pandas as pd
-
-BASE_URL = "http://127.0.0.1:8000"
+import random
 
 st.set_page_config(layout="wide")
 
 # ---------------- GLOBAL STYLE ----------------
 st.markdown("""
 <style>
-
-/* 🌐 Import Font */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
-/* 🔤 GLOBAL FONT */
 html, body, [class*="css"] {
     font-family: 'Poppins', sans-serif;
     font-size: 18px;
 }
 
-/* 🧠 TITLES */
 h1 {
     font-size: 40px !important;
     font-weight: 700;
@@ -28,45 +22,29 @@ h2, h3 {
     font-size: 24px !important;
 }
 
-/* 📊 METRIC CARDS */
 [data-testid="stMetric"] {
     background-color: #111827;
     padding: 15px;
     border-radius: 12px;
 }
 
-/* 📊 METRIC TEXT */
 [data-testid="stMetricValue"] {
     font-size: 28px !important;
 }
 
-/* 📥 INPUTS */
-input, textarea {
-    font-size: 18px !important;
-}
-
-/* 🔘 BUTTON */
 .stButton>button {
     font-size: 18px !important;
     padding: 10px 20px !important;
     border-radius: 10px;
 }
 
-/* 📊 TABLE */
 .stDataFrame {
     font-size: 16px !important;
 }
 
-/* 📂 SIDEBAR */
 section[data-testid="stSidebar"] * {
     font-size: 18px !important;
 }
-
-/* 💡 SUCCESS BOX */
-.stAlert {
-    border-radius: 10px;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -84,7 +62,7 @@ if "results" not in st.session_state:
     st.session_state["results"] = None
 
 # ==============================
-# 🔍 SCREENER
+# 🔍 SCREENER (NO BACKEND)
 # ==============================
 if page == "🔍 Screener":
 
@@ -93,50 +71,48 @@ if page == "🔍 Screener":
     query = st.text_input("Enter your query")
 
     if st.button("Search"):
-        try:
-            res = requests.post(f"{BASE_URL}/query", json={"query": query})
-            st.session_state["results"] = res.json()
-        except:
-            st.error("❌ Backend not running")
 
-    if st.session_state["results"] and st.session_state["results"]["status"] == "success":
+        data = [
+            {"company": "TCS", "price": random.randint(3000, 4000), "revenue": 1000, "profit": random.randint(100, 300)},
+            {"company": "INFY", "price": random.randint(1400, 1800), "revenue": 900, "profit": random.randint(80, 250)},
+            {"company": "RELIANCE", "price": random.randint(2500, 3000), "revenue": 1500, "profit": random.randint(150, 400)},
+            {"company": "HDFC", "price": random.randint(1500, 2000), "revenue": 1100, "profit": random.randint(120, 350)},
+        ]
 
-        data = st.session_state["results"]["data"]["results"]
-        df = pd.DataFrame(data)
+        st.session_state["results"] = pd.DataFrame(data)
+
+    if st.session_state["results"] is not None:
+
+        df = st.session_state["results"]
 
         st.success(f"✅ {len(df)} Stocks Found")
 
-        if not df.empty:
+        col1, col2, col3 = st.columns(3)
 
-            # KPI
-            col1, col2, col3 = st.columns(3)
+        col1.metric("💰 Avg Price", f"₹{int(df['price'].mean())}")
+        col2.metric("📊 Avg Revenue", f"{int(df['revenue'].mean())}")
+        col3.metric("📈 Avg Profit", f"{int(df['profit'].mean())}")
 
-            col1.metric("💰 Avg Price", f"₹{int(df['price'].mean())}")
-            col2.metric("📊 Avg Revenue", f"{int(df['revenue'].mean())}")
-            col3.metric("📈 Avg Profit", f"{int(df['profit'].mean())}")
+        top = df.sort_values(by="profit", ascending=False).iloc[0]
 
-            # Top stock
-            top = df.sort_values(by="profit", ascending=False).iloc[0]
+        st.markdown("### 🏆 Top Performing Stock")
+        st.info(f"{top['company']} | Price: ₹{top['price']} | Profit: {top['profit']}")
 
-            st.markdown("### 🏆 Top Performing Stock")
-            st.info(f"{top['company']} | Price: ₹{top['price']} | Profit: {top['profit']}")
+        tab1, tab2 = st.tabs(["📋 Table", "📈 Charts"])
 
-            # Tabs
-            tab1, tab2 = st.tabs(["📋 Table", "📈 Charts"])
+        with tab1:
+            st.dataframe(df, use_container_width=True)
 
-            with tab1:
-                st.dataframe(df, use_container_width=True)
+        with tab2:
+            col1, col2 = st.columns(2)
 
-            with tab2:
-                col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Price Comparison")
+                st.bar_chart(df.set_index("company")["price"])
 
-                with col1:
-                    st.subheader("Price Comparison")
-                    st.bar_chart(df.set_index("company")["price"])
-
-                with col2:
-                    st.subheader("Profit Comparison")
-                    st.bar_chart(df.set_index("company")["profit"])
+            with col2:
+                st.subheader("Profit Comparison")
+                st.bar_chart(df.set_index("company")["profit"])
 
 # ==============================
 # 💼 PORTFOLIO
@@ -144,8 +120,6 @@ if page == "🔍 Screener":
 elif page == "💼 Portfolio":
 
     st.markdown("<h1>💼 Portfolio Tracker</h1>", unsafe_allow_html=True)
-
-    st.info("Track your investments")
 
     col1, col2, col3 = st.columns(3)
 
@@ -184,35 +158,7 @@ elif page == "🚨 Alerts":
     price = col4.number_input("Target Price")
 
     if st.button("Set Alert"):
-        try:
-            requests.post(f"{BASE_URL}/alerts", json={
-                "user_id": user_id,
-                "alert_type": "price",
-                "stock_symbol": stock,
-                "condition": condition,
-                "value": price
-            })
-            st.success("✅ Alert created successfully!")
-        except:
-            st.error("❌ Backend not running")
-
-    st.markdown("---")
+        st.success("✅ Alert saved (demo mode)")
 
     if st.button("Check Alerts"):
-        try:
-            res = requests.get(f"{BASE_URL}/alerts/check")
-            data = res.json()
-
-            if data.get("status") == "success":
-                alerts = data.get("triggered_alerts", [])
-
-                if alerts:
-                    st.success("🚀 Triggered Alerts")
-                    st.table(pd.DataFrame(alerts))
-                else:
-                    st.info("No alerts triggered")
-            else:
-                st.error(data.get("error", {}).get("message", "Error"))
-
-        except:
-            st.error("❌ Backend not running")
+        st.info("No alerts triggered (demo mode)")
