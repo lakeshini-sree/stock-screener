@@ -26,7 +26,8 @@ from StockScreener.my_project.backend.services.alerts_service import (
     get_alerts,
     delete_alert,
     evaluate_alerts
-)from StockScreener.my_project.backend.compiler.query_builder import SQLCompiler
+)
+from StockScreener.my_project.backend.compiler.query_builder import SQLCompiler
 
 # -----------------------------
 # FASTAPI APP
